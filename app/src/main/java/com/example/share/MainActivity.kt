@@ -120,9 +120,20 @@ class MainActivity : AppCompatActivity() {
 
     fun share(){
         var intent = Intent(Intent.ACTION_SEND)
-        intent.setType("application/pdf")
-        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
-        intent.putExtra(Intent.EXTRA_STREAM,uriArquivo())
-        startActivity(Intent.createChooser(intent,"Compartilhar"))
+        intent.type = "application/pdf"
+        val uri = uriArquivo()
+        intent.putExtra(Intent.EXTRA_STREAM,uri)
+        val chooser = Intent.createChooser(intent,"Compartilhar")
+
+        val resInfoList = this.packageManager.queryIntentActivities(chooser, PackageManager.MATCH_DEFAULT_ONLY)
+        for (resolveInfo in resInfoList) {
+            val packageName = resolveInfo.activityInfo.packageName
+            grantUriPermission(
+                packageName,
+                uri,
+                Intent.FLAG_GRANT_WRITE_URI_PERMISSION or Intent.FLAG_GRANT_READ_URI_PERMISSION
+            )
+        }
+        startActivity(chooser)
     }
 }
