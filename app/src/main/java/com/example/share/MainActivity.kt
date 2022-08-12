@@ -7,6 +7,8 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.widget.Toast
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -24,53 +26,33 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         button.setOnClickListener {
-            if (verificarPermissoes()) {
-                copiaArquivoAssentTOsd(localArquivo())
-                share()
-            } else {
-                Toast.makeText(
-                    this,
-                    "forneça a permissão e tente novamente",
-                    Toast.LENGTH_SHORT
-                ).show()
-            }
-        }
-    }
-
-    fun verificarPermissoes(): Boolean {
-        val permissoesRequeridas: MutableList<String> = ArrayList()
-
-        var appPermissoes = arrayOf(
-            Manifest.permission.INTERNET,
-            Manifest.permission.WRITE_EXTERNAL_STORAGE,
-            Manifest.permission.READ_EXTERNAL_STORAGE,
-        )
-
-        for (permissao in appPermissoes) {
-            if (ContextCompat.checkSelfPermission(
-                    this,
-                    permissao
-                ) != PackageManager.PERMISSION_GRANTED
-            ) {
-                permissoesRequeridas.add(permissao)
-            }
-        }
-        if (!permissoesRequeridas.isEmpty()) {
-            ActivityCompat.requestPermissions(
-                this,
-                permissoesRequeridas.toTypedArray(),
-                1
+            val appPerms = arrayOf(
+                Manifest.permission.READ_EXTERNAL_STORAGE,
+                Manifest.permission.WRITE_EXTERNAL_STORAGE,
             )
-            return false
+            activityResultLauncher.launch(appPerms)
         }
-        return true
     }
 
-    fun copiaArquivoAssentTOsd(file: File) {
+    private var activityResultLauncher: ActivityResultLauncher<Array<String>> =
+        registerForActivityResult(
+            ActivityResultContracts.RequestMultiplePermissions()) { result ->
+            var allAreGranted = true
+            for (b in result.values) {
+                allAreGranted = allAreGranted && b
+            }
+
+            if (allAreGranted) {
+                copiaArquivoAssentTOsd()
+                share()
+            }
+        }
+
+    fun copiaArquivoAssentTOsd() {
         try {
-            val inStream = resources.assets.open("mobato_Renault.pdf")
+            val inStream = resources.assets.open("teste.pdf")
             val outStream =
-                FileOutputStream(file)
+                FileOutputStream(localArquivo())
 
             val buffer = ByteArray(1024)
             var length = inStream.read(buffer)
@@ -83,7 +65,7 @@ class MainActivity : AppCompatActivity() {
 
             inStream.close()
             outStream.close()
-            println("Copiado com sucesso. " + file.absoluteFile)
+            println("Copiado com sucesso. " + localArquivo().absoluteFile)
         } catch (ex: IOException) {
             ex.printStackTrace()
         }
